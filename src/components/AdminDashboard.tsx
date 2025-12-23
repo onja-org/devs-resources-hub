@@ -14,6 +14,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -139,6 +141,27 @@ export default function AdminDashboard() {
     return true;
   });
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredResources.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedResources = filteredResources.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleItemsPerPageChange = (value: number) => {
+    setItemsPerPage(value);
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = (newFilter: 'all' | 'pending' | 'approved') => {
+    setFilter(newFilter);
+    setCurrentPage(1);
+  };
+
   if (authLoading || !user) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -226,7 +249,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex gap-2">
             <button
-              onClick={() => setFilter('all')}
+              onClick={() => handleFilterChange('all')}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 filter === 'all'
                   ? 'bg-blue-600 text-white'
@@ -236,7 +259,7 @@ export default function AdminDashboard() {
               All
             </button>
             <button
-              onClick={() => setFilter('pending')}
+              onClick={() => handleFilterChange('pending')}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 filter === 'pending'
                   ? 'bg-blue-600 text-white'
@@ -246,7 +269,7 @@ export default function AdminDashboard() {
               Pending
             </button>
             <button
-              onClick={() => setFilter('approved')}
+              onClick={() => handleFilterChange('approved')}
               className={`px-4 py-2 rounded-lg transition-colors ${
                 filter === 'approved'
                   ? 'bg-blue-600 text-white'
@@ -360,6 +383,32 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Items Per Page Selector */}
+        {filteredResources.length > 0 && (
+          <div className="flex items-center justify-between mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Items per page:
+              </label>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white cursor-pointer"
+              >
+                <option value={6}>6</option>
+                <option value={12}>12</option>
+                <option value={18}>18</option>
+                <option value={24}>24</option>
+                <option value={30}>30</option>
+                <option value={filteredResources.length}>All ({filteredResources.length})</option>
+              </select>
+            </div>
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing {startIndex + 1}-{Math.min(endIndex, filteredResources.length)} of {filteredResources.length} resources
+            </div>
+          </div>
+        )}
+
         {/* Resources List */}
         <div className="space-y-4">
           {filteredResources.length === 0 ? (
@@ -369,7 +418,7 @@ export default function AdminDashboard() {
               </p>
             </div>
           ) : (
-            filteredResources.map((resource) => (
+            paginatedResources.map((resource) => (
               <div
                 key={resource.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
@@ -442,6 +491,63 @@ export default function AdminDashboard() {
             ))
           )}
         </div>
+
+        {/* Pagination Controls - Bottom */}
+        {totalPages > 1 && (
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                  if (
+                    page === 1 ||
+                    page === totalPages ||
+                    (page >= currentPage - 1 && page <= currentPage + 1)
+                  ) {
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`px-3 py-2 rounded-lg transition-colors ${
+                          currentPage === page
+                            ? 'bg-blue-600 text-white font-semibold'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  } else if (
+                    page === currentPage - 2 ||
+                    page === currentPage + 2
+                  ) {
+                    return <span key={page} className="px-2 text-gray-500">...</span>;
+                  }
+                  return null;
+                })}
+              </div>
+
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
+
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Showing {startIndex + 1}-{Math.min(endIndex, filteredResources.length)} of {filteredResources.length}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
