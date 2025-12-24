@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Resource } from '@/types/resource';
@@ -9,6 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function ResourceList() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const resourceRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [resources, setResources] = useState<Resource[]>([]);
   const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,10 +19,13 @@ export default function ResourceList() {
   const [selectedTech, setSelectedTech] = useState<string>('');
   const [selectedSource, setSelectedSource] = useState<string>('');
   const [selectedRecommendation, setSelectedRecommendation] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<string>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [highlightedResourceId, setHighlightedResourceId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'most-helpful' | 'least-helpful' | 'most-viewed' | 'most-completed'>('newest');
 
   // Get unique values for filters
   const types = [...new Set(resources.map(r => r.type))].sort();
@@ -53,9 +59,97 @@ export default function ResourceList() {
     fetchResources();
   }, []);
 
+  // Handle resourceId from URL query parameter
+  useEffect(() => {
+    const resourceId = searchParams.get('resourceId');
+    if (resourceId && resources.length > 0 && filteredResources.length > 0) {
+      // Find the resource in filtered results
+      const resourceIndex = filteredResources.findIndex(r => r.id === resourceId);
+      if (resourceIndex !== -1) {
+        // Calculate which page the resource is on
+        const resourcePage = Math.floor(resourceIndex / itemsPerPage) + 1;
+        setCurrentPage(resourcePage);
+        
+        // Highlight the resource
+        setHighlightedResourceId(resourceId);
+        
+        // Wait for the component to render and scroll to it
+        setTimeout(() => {
+          const element = resourceRefs.current[resourceId];
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          
+          // Remove highlight after 3 seconds
+          setTimeout(() => {
+            setHighlightedResourceId(null);
+          }, 3000);
+        }, 100);
+      }
+    }
+  }, [searchParams, resources, filteredResources, itemsPerPage]);
+
   // Apply filters
   useEffect(() => {
     let filtered = resources;
+
+    // Quick tab filters
+    if (activeTab !== 'all') {
+      switch (activeTab) {
+        case 'documentation':
+          filtered = filtered.filter(r => r.type === 'Documentation');
+          break;
+        case 'tutorials':
+          filtered = filtered.filter(r => r.type === 'Tutorial');
+          break;
+        case 'tools':
+          filtered = filtered.filter(r => r.type === 'Tool');
+          break;
+        case 'articles':
+          filtered = filtered.filter(r => r.type === 'Blog' || r.type === 'Article');
+          break;
+        case 'community':
+          filtered = filtered.filter(r => r.type === 'Community');
+          break;
+        case 'javascript':
+          filtered = filtered.filter(r => r.techStack.some(tech => tech.toLowerCase().includes('javascript')));
+          break;
+        case 'react':
+          filtered = filtered.filter(r => r.techStack.some(tech => tech.toLowerCase().includes('react')));
+          break;
+        case 'typescript':
+          filtered = filtered.filter(r => r.techStack.some(tech => tech.toLowerCase().includes('typescript')));
+          break;
+        case 'python':
+          filtered = filtered.filter(r => r.techStack.some(tech => tech.toLowerCase().includes('python')));
+          break;
+        case 'ai':
+          filtered = filtered.filter(r => 
+            r.title.toLowerCase().includes('ai') || 
+            r.description.toLowerCase().includes('ai') ||
+            r.title.toLowerCase().includes('artificial intelligence') || 
+            r.description.toLowerCase().includes('artificial intelligence') ||
+            r.title.toLowerCase().includes('machine learning') || 
+            r.description.toLowerCase().includes('machine learning') ||
+            r.techStack.some(tech => 
+              tech.toLowerCase().includes('ai') || 
+              tech.toLowerCase().includes('machine learning') ||
+              tech.toLowerCase().includes('ml')
+            )
+          );
+          break;
+        case 'favorites':
+          if (user) {
+            filtered = filtered.filter(r => r.favorites.includes(user.uid));
+          }
+          break;
+        case 'recommended':
+          if (user) {
+            filtered = filtered.filter(r => r.recommendations?.includes(user.uid));
+          }
+          break;
+      }
+    }
 
     // Search filter
     if (searchTerm) {
@@ -97,7 +191,31 @@ export default function ResourceList() {
 
     setFilteredResources(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, selectedType, selectedTech, selectedSource, selectedRecommendation, resources, user]);
+  }, [searchTerm, selectedType, selectedTech, selectedSource, selectedRecommendation, activeTab, resources, user]);
+
+  // Sort resources
+  const sortedResources = [...filteredResources].sort((a, b) => {
+    switch (sortBy) {
+      case 'newest':
+        const aTime = a.createdAt?.toMillis?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || 0;
+        return bTime - aTime;
+      case 'oldest':
+        const aTimeOld = a.createdAt?.toMillis?.() || 0;
+        const bTimeOld = b.createdAt?.toMillis?.() || 0;
+        return aTimeOld - bTimeOld;
+      case 'most-helpful':
+        return (b.helpfulCount || 0) - (a.helpfulCount || 0);
+      case 'least-helpful':
+        return (a.helpfulCount || 0) - (b.helpfulCount || 0);
+      case 'most-viewed':
+        return (b.viewCount || 0) - (a.viewCount || 0);
+      case 'most-completed':
+        return (b.completedCount || 0) - (a.completedCount || 0);
+      default:
+        return 0;
+    }
+  });
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -105,13 +223,24 @@ export default function ResourceList() {
     setSelectedTech('');
     setSelectedSource('');
     setSelectedRecommendation('');
+    setActiveTab('all');
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Clear other filters when switching tabs
+    setSelectedType('');
+    setSelectedTech('');
+    setSelectedSource('');
+    setSelectedRecommendation('');
+    setCurrentPage(1);
   };
 
   // Pagination calculations
-  const totalPages = Math.ceil(filteredResources.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedResources.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedResources = filteredResources.slice(startIndex, endIndex);
+  const paginatedResources = sortedResources.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -123,7 +252,7 @@ export default function ResourceList() {
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = searchTerm || selectedType || selectedTech || selectedSource || selectedRecommendation;
+  const hasActiveFilters = searchTerm || selectedType || selectedTech || selectedSource || selectedRecommendation || activeTab !== 'all';
 
   if (loading) {
     return (
@@ -152,45 +281,192 @@ export default function ResourceList() {
 
   return (
     <>
-      {/* Search and Filters */}
-      <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-xl p-8 mb-8 border border-gray-200 dark:border-gray-700">
-        <div className="space-y-6">
-          {/* Search Bar */}
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search resources by title, description, tech stack, or source..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-5 py-4 pl-14 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all"
-            />
-            <svg
-              className="absolute left-5 top-1/2 transform -translate-y-1/2 w-6 h-6 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      {/* Quick Filter Tabs - Compact */}
+      <div className="mb-4">
+        <div className="flex flex-wrap gap-1.5 bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 border border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => handleTabChange('all')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'all'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            🌐 All
+          </button>
+          <button
+            onClick={() => handleTabChange('documentation')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'documentation'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            📚 Docs
+          </button>
+          <button
+            onClick={() => handleTabChange('tutorials')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'tutorials'
+                ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            🎓 Tutorials
+          </button>
+          <button
+            onClick={() => handleTabChange('tools')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'tools'
+                ? 'bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            🛠️ Tools
+          </button>
+          <button
+            onClick={() => handleTabChange('articles')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'articles'
+                ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            📰 Articles
+          </button>
+          <button
+            onClick={() => handleTabChange('community')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'community'
+                ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            👥 Community
+          </button>
+          <button
+            onClick={() => handleTabChange('ai')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'ai'
+                ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            🤖 AI
+          </button>
+          <button
+            onClick={() => handleTabChange('javascript')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'javascript'
+                ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            ⚡ JS
+          </button>
+          <button
+            onClick={() => handleTabChange('react')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'react'
+                ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            ⚛️ React
+          </button>
+          <button
+            onClick={() => handleTabChange('typescript')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'typescript'
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            📘 TS
+          </button>
+          <button
+            onClick={() => handleTabChange('python')}
+            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+              activeTab === 'python'
+                ? 'bg-gradient-to-r from-green-600 to-blue-500 text-white shadow-md'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            🐍 Python
+          </button>
+          {user && (
+            <>
+              <button
+                onClick={() => handleTabChange('favorites')}
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+                  activeTab === 'favorites'
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                ❤️ Favorites
+              </button>
+              <button
+                onClick={() => handleTabChange('recommended')}
+                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all cursor-pointer ${
+                  activeTab === 'recommended'
+                    ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+              >
+                ⭐ Recommended
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Search and Filters - Collapsible */}
+      <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-lg p-4 mb-4 border border-gray-200 dark:border-gray-700">
+        <div className="space-y-3">
+          {/* Search Bar - Full Width First Row */}
+          <div>
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Search
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search resources..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all text-sm"
               />
-            </svg>
+              <svg
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
           </div>
 
-          {/* Filter Dropdowns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                📂 Type
+          {/* Filter Dropdowns - Second Row */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+
+            {/* Type Filter */}
+            <div className="md:col-span-3">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Type
               </label>
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all cursor-pointer"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all cursor-pointer"
               >
-                <option value="">All Types</option>
+                <option value="">📂 All Types</option>
                 {types.map((type) => (
                   <option key={type} value={type}>
                     {type}
@@ -199,16 +475,16 @@ export default function ResourceList() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                💻 Tech Stack
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Tech Stack
               </label>
               <select
                 value={selectedTech}
                 onChange={(e) => setSelectedTech(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all cursor-pointer"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all cursor-pointer"
               >
-                <option value="">All Technologies</option>
+                <option value="">💻 All Tech</option>
                 {techStacks.map((tech) => (
                   <option key={tech} value={tech}>
                     {tech}
@@ -217,16 +493,16 @@ export default function ResourceList() {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                🌐 Source
+            <div className="md:col-span-2">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Source
               </label>
               <select
                 value={selectedSource}
                 onChange={(e) => setSelectedSource(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all cursor-pointer"
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all cursor-pointer"
               >
-                <option value="">All Sources</option>
+                <option value="">🌐 All Sources</option>
                 {sources.map((source) => (
                   <option key={source} value={source}>
                     {source}
@@ -235,35 +511,53 @@ export default function ResourceList() {
               </select>
             </div>
 
+            <div className="md:col-span-3">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Sort By
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all cursor-pointer"
+              >
+                <option value="newest">🕒 Newest First</option>
+                <option value="oldest">📅 Oldest First</option>
+                <option value="most-helpful">👍 Most Helpful</option>
+                <option value="least-helpful">👎 Least Helpful</option>
+                <option value="most-viewed">👁️ Most Viewed</option>
+                <option value="most-completed">✅ Most Completed</option>
+              </select>
+            </div>
+
             {user && (
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  ⭐ Recommendations
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  Recommendations
                 </label>
                 <select
                   value={selectedRecommendation}
                   onChange={(e) => setSelectedRecommendation(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all cursor-pointer"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all cursor-pointer"
                 >
-                  <option value="">All Resources</option>
+                  <option value="">⭐ All Resources</option>
                   <option value="my-recommendations">My Recommendations</option>
                 </select>
               </div>
             )}
           </div>
 
-          {/* Active Filters and Clear Button */}
+          {/* Active Filters and Clear Button - Compact */}
           {hasActiveFilters && (
-            <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 text-xs font-medium text-gray-700 dark:text-gray-300">
+                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <span>Showing <strong className="text-blue-600 dark:text-blue-400">{filteredResources.length}</strong> of {resources.length} resources</span>
+                <span><strong className="text-blue-600 dark:text-blue-400">{filteredResources.length}</strong> of {resources.length}</span>
               </div>
               <button
                 onClick={clearFilters}
-                className="px-5 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-xl transition-all shadow-md hover:shadow-lg"
+                className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-lg transition-all shadow-md hover:shadow-lg cursor-pointer"
               >
                 Clear Filters
               </button>
@@ -272,17 +566,17 @@ export default function ResourceList() {
         </div>
       </div>
 
-      {/* Items Per Page Selector */}
+      {/* Items Per Page Selector - Compact */}
       {filteredResources.length > 0 && (
-        <div className="flex items-center justify-between mb-6 bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Items per page:
+        <div className="flex items-center justify-between mb-3 bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+              Per page:
             </label>
             <select
               value={itemsPerPage}
               onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white cursor-pointer"
+              className="px-2 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white cursor-pointer"
             >
               <option value={6}>6</option>
               <option value={12}>12</option>
@@ -292,8 +586,8 @@ export default function ResourceList() {
               <option value={filteredResources.length}>All ({filteredResources.length})</option>
             </select>
           </div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {startIndex + 1}-{Math.min(endIndex, filteredResources.length)} of {filteredResources.length} resources
+          <div className="text-xs text-gray-600 dark:text-gray-400">
+            Showing {startIndex + 1}-{Math.min(endIndex, filteredResources.length)} of {filteredResources.length}
           </div>
         </div>
       )}
@@ -314,9 +608,19 @@ export default function ResourceList() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
             {paginatedResources.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} />
+              <div
+                key={resource.id}
+                ref={(el) => { resourceRefs.current[resource.id] = el; }}
+                className={`transition-all duration-500 h-full ${
+                  highlightedResourceId === resource.id 
+                    ? 'ring-4 ring-blue-500 ring-offset-4 dark:ring-offset-gray-900 rounded-xl' 
+                    : ''
+                }`}
+              >
+                <ResourceCard resource={resource} />
+              </div>
             ))}
           </div>
 
@@ -327,7 +631,7 @@ export default function ResourceList() {
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   Previous
                 </button>
@@ -344,7 +648,7 @@ export default function ResourceList() {
                         <button
                           key={page}
                           onClick={() => handlePageChange(page)}
-                          className={`px-3 py-2 rounded-lg transition-colors ${
+                          className={`px-3 py-2 rounded-lg transition-colors cursor-pointer ${
                             currentPage === page
                               ? 'bg-blue-600 text-white font-semibold'
                               : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -366,7 +670,7 @@ export default function ResourceList() {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
                 >
                   Next
                 </button>

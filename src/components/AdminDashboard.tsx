@@ -2,20 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/contexts/ToastContext';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Resource } from '@/types/resource';
 import { useRouter } from 'next/navigation';
+import { removeDuplicateResources } from '@/lib/cleanupDuplicates';
+import { seedDefaultResources } from '@/lib/seed';
 
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
+  const toast = useToast();
   const router = useRouter();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
+  const [isCleaningDuplicates, setIsCleaningDuplicates] = useState(false);
+  const [isSeedingResources, setIsSeedingResources] = useState(false);
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'most-helpful' | 'least-helpful' | 'most-viewed' | 'most-completed'>('newest');
+
+  // Calculate pending count for badge
+  const pendingCount = resources.filter(r => !r.approved).length;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -69,27 +80,62 @@ export default function AdminDashboard() {
 
   async function handleApprove(resourceId: string) {
     try {
+      const resource = resources.find(r => r.id === resourceId);
+      if (!resource) return;
+
       const resourceRef = doc(db, 'resources', resourceId);
       await updateDoc(resourceRef, { approved: true });
+      
+      // Create notification for the user who submitted the resource
+      if (resource.submittedBy) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: resource.submittedBy,
+          type: 'resource_approved',
+          resourceId: resourceId,
+          resourceTitle: resource.title,
+          message: `Your resource "${resource.title}" has been approved and is now live!`,
+          read: false,
+          createdAt: Timestamp.now(),
+        });
+      }
+      
       setResources(resources.map(r => 
         r.id === resourceId ? { ...r, approved: true } : r
       ));
+      
+      toast.success('Resource approved and user notified!');
     } catch (error) {
       console.error('Error approving resource:', error);
-      alert('Failed to approve resource');
+      toast.error('Failed to approve resource');
     }
   }
 
   async function handleReject(resourceId: string) {
-    if (!confirm('Are you sure you want to delete this resource?')) return;
-    
     try {
+      const resource = resources.find(r => r.id === resourceId);
+      if (!resource) return;
+
+      // Create notification for the user who submitted the resource
+      if (resource.submittedBy) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: resource.submittedBy,
+          type: 'resource_declined',
+          resourceTitle: resource.title,
+          message: `Your resource "${resource.title}" was not approved. Please ensure it meets our quality guidelines.`,
+          read: false,
+          createdAt: Timestamp.now(),
+        });
+      }
+
       const resourceRef = doc(db, 'resources', resourceId);
       await deleteDoc(resourceRef);
       setResources(resources.filter(r => r.id !== resourceId));
+      
+      toast.success('Resource deleted and user notified!');
+      setShowDeleteConfirm(null);
     } catch (error) {
       console.error('Error rejecting resource:', error);
-      alert('Failed to reject resource');
+      toast.error('Failed to delete resource');
     }
   }
 
@@ -128,18 +174,97 @@ export default function AdminDashboard() {
         source: '',
       });
       setShowAddForm(false);
-      alert('Resource added successfully!');
+      toast.success('Resource added successfully!');
     } catch (error) {
       console.error('Error adding resource:', error);
-      alert('Failed to add resource');
+      toast.error('Failed to add resource');
     }
   }
 
-  const filteredResources = resources.filter(r => {
-    if (filter === 'pending') return !r.approved;
-    if (filter === 'approved') return r.approved;
-    return true;
-  });
+  const handleCleanupDuplicates = async () => {
+    if (!window.confirm('This will remove all duplicate resources from the database. Are you sure?')) {
+      return;
+    }
+
+    setIsCleaningDuplicates(true);
+    try {
+      const result = await removeDuplicateResources();
+      
+      if (result.success) {
+        toast.success(`Removed ${result.removed} duplicates! ${result.remaining} unique resources remain.`);
+        // Reload resources
+        await fetchResources();
+      } else {
+        toast.error('Failed to remove duplicates');
+      }
+    } catch (error) {
+      console.error('Error cleaning duplicates:', error);
+      toast.error('Failed to remove duplicates');
+    } finally {
+      setIsCleaningDuplicates(false);
+    }
+  };
+
+  const handleSeedResources = async () => {
+    if (!window.confirm('This will add default resources to the database (skipping duplicates). Continue?')) {
+      return;
+    }
+
+    setIsSeedingResources(true);
+    try {
+      const result = await seedDefaultResources();
+      
+      if (result.success) {
+        toast.success(`Added ${result.count} new resources! Skipped ${result.skipped} duplicates.`);
+        // Reload resources
+        await fetchResources();
+      } else {
+        toast.error('Failed to seed resources');
+      }
+    } catch (error) {
+      console.error('Error seeding resources:', error);
+      toast.error('Failed to seed resources');
+    } finally {
+      setIsSeedingResources(false);
+    }
+  };
+
+  const filteredResources = resources
+    .filter(r => {
+      if (filter === 'pending') return !r.approved;
+      if (filter === 'approved') return r.approved;
+      return true;
+    })
+    .sort((a, b) => {
+      // In 'all' tab, show pending first
+      if (filter === 'all') {
+        // Pending resources first
+        if (!a.approved && b.approved) return -1;
+        if (a.approved && !b.approved) return 1;
+      }
+      
+      // Then apply selected sort
+      switch (sortBy) {
+        case 'newest':
+          const aTime = a.createdAt?.toMillis?.() || 0;
+          const bTime = b.createdAt?.toMillis?.() || 0;
+          return bTime - aTime;
+        case 'oldest':
+          const aTimeOld = a.createdAt?.toMillis?.() || 0;
+          const bTimeOld = b.createdAt?.toMillis?.() || 0;
+          return aTimeOld - bTimeOld;
+        case 'most-helpful':
+          return (b.helpfulCount || 0) - (a.helpfulCount || 0);
+        case 'least-helpful':
+          return (a.helpfulCount || 0) - (b.helpfulCount || 0);
+        case 'most-viewed':
+          return (b.viewCount || 0) - (a.viewCount || 0);
+        case 'most-completed':
+          return (b.completedCount || 0) - (a.completedCount || 0);
+        default:
+          return 0;
+      }
+    });
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredResources.length / itemsPerPage);
@@ -235,19 +360,29 @@ export default function AdminDashboard() {
               {resources.filter(r => r.approved).length}
             </p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 relative">
+            {pendingCount > 0 && (
+              <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-8 h-8 flex items-center justify-center animate-pulse shadow-lg">
+                {pendingCount}
+              </div>
+            )}
             <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">
               Pending Approval
             </h3>
             <p className="text-3xl font-bold text-orange-600">
-              {resources.filter(r => !r.approved).length}
+              {pendingCount}
             </p>
+            {pendingCount > 0 && (
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-2 font-medium">
+                ⚠️ Requires attention
+              </p>
+            )}
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex gap-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => handleFilterChange('all')}
               className={`px-4 py-2 rounded-lg transition-colors ${
@@ -260,13 +395,22 @@ export default function AdminDashboard() {
             </button>
             <button
               onClick={() => handleFilterChange('pending')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
+              className={`px-4 py-2 rounded-lg transition-colors relative ${
                 filter === 'pending'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300'
               }`}
             >
               Pending
+              {pendingCount > 0 && (
+                <span className={`ml-2 px-2 py-0.5 text-xs font-bold rounded-full ${
+                  filter === 'pending'
+                    ? 'bg-white text-blue-600'
+                    : 'bg-orange-500 text-white'
+                }`}>
+                  {pendingCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => handleFilterChange('approved')}
@@ -279,12 +423,42 @@ export default function AdminDashboard() {
               Approved
             </button>
           </div>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            {showAddForm ? 'Cancel' : 'Add Resource'}
-          </button>
+          <div className="flex gap-2 flex-wrap items-center">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white shadow-sm transition-all cursor-pointer"
+            >
+              <option value="newest">🕒 Newest First</option>
+              <option value="oldest">📅 Oldest First</option>
+              <option value="most-helpful">👍 Most Helpful</option>
+              <option value="least-helpful">👎 Least Helpful</option>
+              <option value="most-viewed">👁️ Most Viewed</option>
+              <option value="most-completed">✅ Most Completed</option>
+            </select>
+            <button
+              onClick={handleCleanupDuplicates}
+              disabled={isCleaningDuplicates}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              {isCleaningDuplicates ? 'Cleaning...' : '🗑️ Remove Duplicates'}
+            </button>
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                onClick={handleSeedResources}
+                disabled={isSeedingResources}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                {isSeedingResources ? 'Seeding...' : '📦 Seed Resources'}
+              </button>
+            )}
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              {showAddForm ? 'Cancel' : 'Add Resource'}
+            </button>
+          </div>
         </div>
 
         {/* Add Resource Form */}
@@ -409,8 +583,8 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Resources List */}
-        <div className="space-y-4">
+        {/* Resources Grid */}
+        <div className="mb-8">
           {filteredResources.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
               <p className="text-gray-600 dark:text-gray-400">
@@ -418,79 +592,180 @@ export default function AdminDashboard() {
               </p>
             </div>
           ) : (
-            paginatedResources.map((resource) => (
-              <div
-                key={resource.id}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+              {paginatedResources.map((resource) => (
+                <div
+                  key={resource.id}
+                  className="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col h-full"
+                >
+                  {/* Card Header */}
+                  <div className="p-4 flex-1 flex flex-col">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 flex-1 min-h-[3.5rem]">
                         {resource.title}
                       </h3>
                       <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
+                        className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${
                           resource.approved
                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                             : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
                         }`}
                       >
-                        {resource.approved ? 'Approved' : 'Pending'}
-                      </span>
-                      <span className="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        {resource.type}
+                        {resource.approved ? '✓' : '⏳'}
                       </span>
                     </div>
-                    <p className="text-gray-600 dark:text-gray-300 mb-3">
+                    
+                    <span className="inline-block px-2 py-1 text-xs font-medium rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white mb-2 w-fit">
+                      {resource.type}
+                    </span>
+                    
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-3 min-h-[4rem]">
                       {resource.description}
                     </p>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {resource.techStack.map((tech, index) => (
+                    
+                    {/* Tech Stack */}
+                    <div className="flex flex-wrap gap-1.5 mb-2 min-h-[2rem]">
+                      {resource.techStack.slice(0, 4).map((tech, index) => (
                         <span
                           key={index}
-                          className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                          className="px-2 py-1 text-xs rounded-md bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 font-medium h-fit"
                         >
                           {tech}
                         </span>
                       ))}
+                      {resource.techStack.length > 4 && (
+                        <span className="px-2 py-1 text-xs rounded-md bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-400 font-medium">
+                          +{resource.techStack.length - 4}
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                      <span>Source: {resource.source}</span>
-                      <span>•</span>
+                    
+                    {/* Metadata */}
+                    <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                      <span className="flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9 3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        </svg>
+                        {resource.source}
+                      </span>
+                    </div>
+                    
+                    {/* Engagement Stats */}
+                    <div className="grid grid-cols-2 gap-1.5 text-xs">
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                        <svg className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span className="font-semibold text-blue-700 dark:text-blue-300">{resource.viewCount || 0}</span>
+                        <span className="text-blue-600 dark:text-blue-400">views</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 bg-red-50 dark:bg-red-900/20 rounded-md">
+                        <svg className="w-3.5 h-3.5 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+                        </svg>
+                        <span className="font-semibold text-red-700 dark:text-red-300">{resource.favorites.length}</span>
+                        <span className="text-red-600 dark:text-red-400">saves</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 bg-green-50 dark:bg-green-900/20 rounded-md">
+                        <svg className="w-3.5 h-3.5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                        </svg>
+                        <span className="font-semibold text-green-700 dark:text-green-300">{resource.helpfulCount || 0}</span>
+                        <span className="text-green-600 dark:text-green-400">helpful</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5 px-2 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-md">
+                        <svg className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <span className="font-semibold text-purple-700 dark:text-purple-300">{resource.completedCount || 0}</span>
+                        <span className="text-purple-600 dark:text-purple-400">done</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Card Footer with Actions */}
+                  <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-600 rounded-b-xl">
+                    <div className="grid grid-cols-3 gap-2">
                       <a
                         href={resource.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                        className="px-3 py-2 text-xs font-medium text-center bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
                       >
-                        View Link
+                        View
                       </a>
-                      <span>•</span>
-                      <span>{resource.favorites.length} favorites</span>
+                      {!resource.approved ? (
+                        <button
+                          onClick={() => handleApprove(resource.id)}
+                          className="px-3 py-2 text-xs font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer"
+                          title="Approve"
+                        >
+                          Approve
+                        </button>
+                      ) : (
+                        <div className="px-3 py-2 text-xs font-medium text-center bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 rounded-lg cursor-not-allowed">
+                          Approved
+                        </div>
+                      )}
+                      <button
+                        onClick={() => setShowDeleteConfirm(resource.id)}
+                        className="px-3 py-2 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors cursor-pointer"
+                        title="Delete"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-2 ml-4">
-                    {!resource.approved && (
-                      <button
-                        onClick={() => handleApprove(resource.id)}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        Approve
-                      </button>
-                    )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <>
+            <div 
+              className="fixed inset-0 bg-black/50 z-40"
+              onClick={() => setShowDeleteConfirm(null)}
+            />
+            <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                    Delete Resource
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    Are you sure you want to delete this resource? This action cannot be undone and the user will be notified.
+                  </p>
+                  <div className="flex gap-3 justify-end">
                     <button
-                      onClick={() => handleReject(resource.id)}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      onClick={() => setShowDeleteConfirm(null)}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleReject(showDeleteConfirm)}
+                      className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors cursor-pointer"
                     >
                       Delete
                     </button>
                   </div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            </div>
+          </>
+        )}
 
         {/* Pagination Controls - Bottom */}
         {totalPages > 1 && (

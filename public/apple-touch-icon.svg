@@ -1,0 +1,28 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with gradient -->
+  <rect width="180" height="180" rx="32" fill="url(#gradient)"/>
+  
+  <!-- Code brackets -->
+  <path d="M50 55L30 90L50 125" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M130 55L150 90L130 125" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Center forward slash -->
+  <path d="M105 45L75 135" stroke="white" stroke-width="10" stroke-linecap="round"/>
+  
+  <!-- Gamification spark -->
+  <circle cx="145" cy="35" r="12" fill="#FCD34D"/>
+  <path d="M145 23V47M133 35H157" stroke="#FCD34D" stroke-width="5" stroke-linecap="round"/>
+  
+  <!-- Progress bar at bottom -->
+  <rect x="30" y="145" width="120" height="8" rx="4" fill="white" opacity="0.3"/>
+  <rect x="30" y="145" width="80" height="8" rx="4" fill="#FCD34D"/>
+  
+  <!-- Gradient definition -->
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="50%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+  </defs>
+</svg>

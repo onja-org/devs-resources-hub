@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { collection, addDoc, getDocs, Timestamp, getDoc, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Comment, Resource } from '@/types/resource';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 interface CommentModalProps {
   isOpen: boolean;
@@ -28,6 +29,9 @@ export default function CommentModal({ isOpen, onClose, resourceId }: CommentMod
   const [linkPreview, setLinkPreview] = useState<{title?: string; description?: string; image?: string} | null>(null);
   const [showReplyForm, setShowReplyForm] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+
+  // Lock body scroll when modal is open
+  useLockBodyScroll(isOpen);
 
   useEffect(() => {
     if (isOpen) {
@@ -357,7 +361,7 @@ export default function CommentModal({ isOpen, onClose, resourceId }: CommentMod
           </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 ml-4"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 cursor-pointer"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { collection, getDocs, addDoc, Timestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
 
 interface RecommendModalProps {
   isOpen: boolean;
@@ -24,6 +25,9 @@ export default function RecommendModal({ isOpen, onClose, resourceId, resourceTi
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+
+  // Lock body scroll when modal is open
+  useLockBodyScroll(isOpen);
 
   useEffect(() => {
     if (isOpen) {
@@ -166,7 +170,7 @@ export default function RecommendModal({ isOpen, onClose, resourceId, resourceTi
                 <button
                   key={u.id}
                   onClick={() => setSelectedUser(u.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer ${
                     selectedUser === u.id
                       ? 'bg-blue-100 dark:bg-blue-900 border-2 border-blue-500'
                       : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-transparent'
