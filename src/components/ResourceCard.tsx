@@ -296,8 +296,27 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't open link if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'A'
+    ) {
+      return;
+    }
+    
+    // Open resource link in new tab
+    window.open(resource.link, '_blank', 'noopener,noreferrer');
+  };
+
   return (
-    <div className="group relative flex flex-col h-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600">
+    <div 
+      onClick={handleCardClick}
+      className="group relative flex flex-col h-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 cursor-pointer"
+    >
       <div className="flex-1 p-4 pb-2 flex flex-col">
         <div className="flex items-start justify-between mb-2 pr-10">
           <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 min-h-[3rem]">
