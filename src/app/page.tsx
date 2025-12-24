@@ -3,7 +3,6 @@ import ResourceList from '@/components/ResourceList';
 import Header from '@/components/Header';
 import ProgressDashboard from '@/components/ProgressDashboard';
 import StreakTracker from '@/components/StreakTracker';
-import FAQSection from '@/components/FAQSection';
 import { Suspense } from 'react';
 
 export default function Home() {
@@ -101,8 +100,6 @@ export default function Home() {
           }>
             <ResourceList />
           </Suspense>
-
-          <FAQSection />
         </main>
       </div>
     </AuthProvider>
