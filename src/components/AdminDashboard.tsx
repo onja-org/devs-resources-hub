@@ -15,9 +15,11 @@ export default function AdminDashboard() {
   const toast = useToast();
   const router = useRouter();
   const [resources, setResources] = useState<Resource[]>([]);
+  const [users, setUsers] = useState<Array<{ id: string; email: string; name: string; isAdmin: boolean; createdAt: any }>>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved'>('all');
+  const [activeTab, setActiveTab] = useState<'resources' | 'users'>('resources');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
@@ -38,20 +40,56 @@ export default function AdminDashboard() {
     source: '',
   });
 
-  // Check if user is admin (you should implement proper admin checking)
-  const isAdmin = user?.email?.includes('admin') || false;
+  // Check if user is admin - admin@onja.org is default admin
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCheckLoading, setAdminCheckLoading] = useState(true);
 
   useEffect(() => {
     // Wait for auth to load
     if (authLoading) return;
     
-    // Only fetch resources if user is admin
+    // Check admin status
+    checkAdminStatus();
+  }, [user, authLoading]);
+
+  useEffect(() => {
+    // Only fetch data if user is admin
+    if (adminCheckLoading) return;
+    
     if (user && isAdmin) {
       fetchResources();
+      fetchUsers();
     } else {
       setLoading(false);
     }
-  }, [user, isAdmin, authLoading]);
+  }, [user, isAdmin, adminCheckLoading]);
+
+  async function checkAdminStatus() {
+    if (!user) {
+      setIsAdmin(false);
+      setAdminCheckLoading(false);
+      return;
+    }
+
+    try {
+      // admin@onja.org is always admin
+      if (user.email === 'admin@onja.org') {
+        setIsAdmin(true);
+        setAdminCheckLoading(false);
+        return;
+      }
+
+      // Check if user has admin flag in database
+      const userDoc = await getDocs(collection(db, 'users'));
+      const userData = userDoc.docs.find(doc => doc.id === user.uid)?.data();
+      setIsAdmin(userData?.isAdmin === true);
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      setIsAdmin(false);
+    } finally {
+      setAdminCheckLoading(false);
+    }
+  }
 
   async function fetchResources() {
     try {
@@ -68,6 +106,41 @@ export default function AdminDashboard() {
       console.error('Error fetching resources:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchUsers() {
+    try {
+      const usersRef = collection(db, 'users');
+      const querySnapshot = await getDocs(usersRef);
+      
+      const fetchedUsers = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        email: doc.data().email || '',
+        name: doc.data().name || 'Unknown',
+        isAdmin: doc.data().isAdmin || false,
+        createdAt: doc.data().createdAt,
+      }));
+      
+      setUsers(fetchedUsers);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  }
+
+  async function toggleAdminStatus(userId: string, currentStatus: boolean) {
+    try {
+      const userRef = doc(db, 'users', userId);
+      await updateDoc(userRef, { isAdmin: !currentStatus });
+      
+      setUsers(users.map(u => 
+        u.id === userId ? { ...u, isAdmin: !currentStatus } : u
+      ));
+      
+      toast.success(!currentStatus ? 'User promoted to admin' : 'Admin privileges removed');
+    } catch (error) {
+      console.error('Error updating admin status:', error);
+      toast.error('Failed to update admin status');
     }
   }
 
@@ -394,6 +467,46 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setActiveTab('resources')}
+              className={`px-6 py-3 font-medium transition-colors relative ${
+                activeTab === 'resources'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              Resources
+              {pendingCount > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                  {pendingCount}
+                </span>
+              )}
+              {activeTab === 'resources' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`px-6 py-3 font-medium transition-colors relative ${
+                activeTab === 'users'
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              Users ({users.length})
+              {activeTab === 'users' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Resources Tab */}
+        {activeTab === 'resources' && (
+          <>
         {/* Actions */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
           <div className="flex gap-2 flex-wrap">
@@ -834,6 +947,96 @@ export default function AdminDashboard() {
 
             <div className="text-sm text-gray-600 dark:text-gray-400">
               Showing {startIndex + 1}-{Math.min(endIndex, filteredResources.length)} of {filteredResources.length}
+            </div>
+          </div>
+        )}
+        </>
+        )}
+
+        {/* Users Tab */}
+        {activeTab === 'users' && (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Joined
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {users.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                        No users found
+                      </td>
+                    </tr>
+                  ) : (
+                    users.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                              {user.name.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                                {user.name}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900 dark:text-gray-300">{user.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {user.isAdmin ? (
+                            <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                              Admin
+                            </span>
+                          ) : (
+                            <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                              User
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {user.createdAt ? new Date(user.createdAt.toDate()).toLocaleDateString() : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                          {user.email === 'admin@onja.org' ? (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Main Admin</span>
+                          ) : (
+                            <button
+                              onClick={() => toggleAdminStatus(user.id, user.isAdmin)}
+                              className={`px-4 py-2 rounded-lg transition-colors ${
+                                user.isAdmin
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-200 dark:hover:bg-red-800'
+                                  : 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-200 dark:hover:bg-purple-800'
+                              }`}
+                            >
+                              {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

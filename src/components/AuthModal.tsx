@@ -39,6 +39,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       return;
     }
 
+    // Block registration with admin email
+    if (mode === 'signup' && email.toLowerCase().includes('admin')) {
+      setError('Cannot register with admin email. Please use a different email address.');
+      return;
+    }
+
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
       return;
