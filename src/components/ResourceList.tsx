@@ -93,6 +93,15 @@ export default function ResourceList() {
   useEffect(() => {
     let filtered = resources;
 
+    // Check if there's a resourceId in URL - if so, show only that resource
+    const resourceId = searchParams.get('resourceId');
+    if (resourceId) {
+      filtered = filtered.filter(r => r.id === resourceId);
+      setFilteredResources(filtered);
+      setCurrentPage(1);
+      return; // Skip other filters when showing a specific resource
+    }
+
     // Quick tab filters
     if (activeTab !== 'all') {
       switch (activeTab) {
@@ -191,7 +200,7 @@ export default function ResourceList() {
 
     setFilteredResources(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchTerm, selectedType, selectedTech, selectedSource, selectedRecommendation, activeTab, resources, user]);
+  }, [searchTerm, selectedType, selectedTech, selectedSource, selectedRecommendation, activeTab, resources, user, searchParams]);
 
   // Sort resources
   const sortedResources = [...filteredResources].sort((a, b) => {
@@ -423,6 +432,30 @@ export default function ResourceList() {
 
       {/* Search and Filters - Collapsible */}
       <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-lg p-4 mb-4 border border-gray-200 dark:border-gray-700">
+        {/* Show message when viewing specific resource */}
+        {searchParams.get('resourceId') && (
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Viewing a specific resource
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  window.history.pushState({}, '', window.location.pathname);
+                  window.location.reload();
+                }}
+                className="px-3 py-1 text-sm font-medium text-blue-700 dark:text-blue-300 hover:text-blue-900 dark:hover:text-blue-100 bg-blue-100 dark:bg-blue-900/40 hover:bg-blue-200 dark:hover:bg-blue-900/60 rounded-lg transition-colors"
+              >
+                View All Resources
+              </button>
+            </div>
+          </div>
+        )}
         <div className="space-y-3">
           {/* Search Bar - Full Width First Row */}
           <div>

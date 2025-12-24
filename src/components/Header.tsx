@@ -17,7 +17,7 @@ export default function Header() {
       <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 cursor-pointer">
               <svg
                 className="w-8 h-8 text-blue-600"
                 fill="none"
@@ -40,7 +40,7 @@ export default function Header() {
               {user?.email?.includes('admin') && (
                 <Link
                   href="/admin"
-                  className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors"
+                  className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium transition-colors cursor-pointer"
                 >
                   Admin
                 </Link>

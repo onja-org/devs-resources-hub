@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
-import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Resource } from '@/types/resource';
 import { useRouter } from 'next/navigation';
@@ -79,10 +79,16 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Check if user has admin flag in database
-      const userDoc = await getDocs(collection(db, 'users'));
-      const userData = userDoc.docs.find(doc => doc.id === user.uid)?.data();
-      setIsAdmin(userData?.isAdmin === true);
+      // Check if user has admin flag in database - use getDoc instead of getDocs
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDocSnap = await getDoc(userDocRef);
+      
+      if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        setIsAdmin(userData?.isAdmin === true);
+      } else {
+        setIsAdmin(false);
+      }
     } catch (error) {
       console.error('Error checking admin status:', error);
       setIsAdmin(false);

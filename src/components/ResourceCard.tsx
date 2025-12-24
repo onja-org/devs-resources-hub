@@ -31,6 +31,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
   const [helpfulCount, setHelpfulCount] = useState(resource.helpfulCount || 0);
   const [viewCount, setViewCount] = useState(resource.viewCount || 0);
   const [hasViewed, setHasViewed] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // Load user's activity status (including if they've already viewed this)
   useEffect(() => {
@@ -253,6 +254,34 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
     }
   };
 
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const url = `${window.location.origin}/?resourceId=${resource.id}`;
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
+      } catch (err) {
+        console.error('Fallback copy failed:', err);
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
   return (
     <div className="group relative flex flex-col h-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600">
       <div className="flex-1 p-4 pb-2 flex flex-col">
@@ -419,6 +448,25 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
                 </svg>
               </button>
             )}
+            <button
+              onClick={handleShare}
+              className={`p-1.5 rounded-lg transition-colors ${
+                copySuccess
+                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              title={copySuccess ? 'Link copied!' : 'Copy link to this resource'}
+            >
+              {copySuccess ? (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+              )}
+            </button>
             <a
               href={resource.link}
               target="_blank"
