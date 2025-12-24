@@ -22,9 +22,10 @@ A comprehensive web platform for discovering, sharing, and learning from 265+ cu
 - 💬 **Community Features** - Comments, replies, and resource recommendations
 - 🔔 **Real-time Notifications** - Get notified of recommendations, achievements, and updates
 - 👥 **User Profiles** - Track your XP, level, achievements, streaks, and completed resources
-- 👨‍💼 **Admin Dashboard** - Manage resources, users, and approve submissions
+- 👨‍💼 **Admin Dashboard** - Manage resources, users, approve submissions, and automated link validation
 - 🎨 **Modern UI/UX** - Responsive design, dark mode, smooth animations, and beautiful gradients
 - 🔗 **Share Resources** - Copy shareable links to specific resources
+- 🧹 **Link Validation** - Automated detection and removal of broken/dead links
 - 📱 **Mobile Responsive** - Works seamlessly on desktop, tablet, and mobile devices
 - ⚡ **Performance Optimized** - Fast loading, efficient database queries, and optimized rendering
 - 🔎 **SEO Optimized** - Comprehensive metadata, structured data, sitemap, and robots.txt
@@ -162,12 +163,36 @@ When you recommend to a friend:
 
 ### Admin Features
 
-Admin users (email contains "admin") can:
+Admin users (email contains "admin" or has `isAdmin: true` in Firestore) can:
 - View all resources and statistics
 - Approve/reject pending submissions
 - Add resources directly (bypassing approval)
 - Delete any resource
 - Seed default resources for testing Firestore
+- **Remove duplicate resources** with one click
+- **Scan for broken links** - Check all resource URLs for validity
+- **Automatically remove broken links** - Delete resources with dead/404 links
+- Filter resources by pending, approved, or broken links
+- Sort resources by newest, oldest, most helpful, most viewed, or most completed
+
+#### Broken Link Detection
+
+The admin dashboard includes automated link validation:
+
+**UI Buttons:**
+- **🔍 Scan Links**: Check all resources without deleting (dry run)
+- **🧹 Remove Broken**: Automatically delete resources with broken links
+
+**CLI Script:**
+```bash
+# Scan only (recommended first)
+npm run validate-links
+
+# Delete broken resources
+npm run cleanup-broken-links
+```
+
+See [Broken Link Detection Guide](docs/BROKEN_LINK_DETECTION.md) for detailed documentation.
 
 Use the provided Firestore helpers for database operations:
 

@@ -85,10 +85,10 @@ export default function Home() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <main className="container mx-auto px-4 py-8">
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-3">
               Developer Resources
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-base md:text-lg text-gray-600 dark:text-gray-400">
               Discover, learn, and grow with curated resources
             </p>
           </div>

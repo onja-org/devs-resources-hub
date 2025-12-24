@@ -27,6 +27,7 @@ export interface Resource {
   helpfulCount?: number; // Track usefulness
   completedCount?: number; // Track how many users completed this
   readingTime?: number; // Estimated reading time in minutes
+  brokenLinkReports?: string[]; // Array of user IDs who reported broken link
 }
 
 export interface Notification {

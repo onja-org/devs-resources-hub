@@ -733,19 +733,29 @@ export default function AdminDashboard() {
                 >
                   {/* Card Header */}
                   <div className="p-4 flex-1 flex flex-col">
-                    <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-start justify-between mb-2 gap-2">
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white line-clamp-2 flex-1 min-h-[3.5rem]">
                         {resource.title}
                       </h3>
-                      <span
-                        className={`ml-2 px-2 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${
-                          resource.approved
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                            : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-                        }`}
-                      >
-                        {resource.approved ? '✓' : '⏳'}
-                      </span>
+                      <div className="flex gap-1 flex-shrink-0">
+                        {resource.brokenLinkReports && resource.brokenLinkReports.length > 0 && (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 flex items-center gap-1" title={`${resource.brokenLinkReports.length} user(s) reported this link as broken`}>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            {resource.brokenLinkReports.length}
+                          </span>
+                        )}
+                        <span
+                          className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            resource.approved
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+                          }`}
+                        >
+                          {resource.approved ? '✓' : '⏳'}
+                        </span>
+                      </div>
                     </div>
                     
                     <span className="inline-block px-2 py-1 text-xs font-medium rounded-md bg-gradient-to-r from-blue-500 to-purple-600 text-white mb-2 w-fit">

@@ -266,6 +266,8 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
     }
   };
 
+
+
   const handleShare = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -298,15 +300,15 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
     <div className="group relative flex flex-col h-full bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600">
       <div className="flex-1 p-4 pb-2 flex flex-col">
         <div className="flex items-start justify-between mb-2 pr-10">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 min-h-[3rem]">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white flex-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2 min-h-[3rem]">
             {resource.title}
           </h2>
-          <span className="ml-2 px-2.5 py-1 text-xs font-semibold rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md whitespace-nowrap flex-shrink-0">
+          <span className="ml-2 px-2.5 py-1 text-xs md:text-sm font-semibold rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md whitespace-nowrap flex-shrink-0">
             {resource.type}
           </span>
         </div>
 
-        <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-2 leading-relaxed min-h-[2.5rem]">
+        <p className="text-sm md:text-base text-gray-600 dark:text-gray-300 mb-2 line-clamp-2 leading-relaxed min-h-[2.5rem]">
           {resource.description}
         </p>
 
@@ -315,7 +317,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
             {resource.techStack.slice(0, 5).map((tech, index) => (
               <span
                 key={index}
-                className="px-2 py-0.5 text-xs font-medium rounded-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 dark:from-gray-700 dark:to-gray-600 dark:text-gray-200 shadow-sm h-fit"
+                className="px-2 py-0.5 text-xs md:text-sm font-medium rounded-full bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 dark:from-gray-700 dark:to-gray-600 dark:text-gray-200 shadow-sm h-fit"
               >
                 {tech}
               </span>
@@ -397,13 +399,14 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
           </div>
         )}
 
-        <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+          {/* First row: Source and view count */}
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
               </svg>
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{resource.source}</span>
+              <span className="text-sm md:text-base font-semibold text-gray-700 dark:text-gray-300">{resource.source}</span>
             </div>
             
             {viewCount > 0 && (
@@ -412,11 +415,13 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
-                <span className="text-xs font-medium">{viewCount}</span>
+                <span className="text-xs md:text-sm font-medium">{viewCount}</span>
               </div>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          
+          {/* Second row: Action buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
             {user && resource.submittedBy === user.uid && (
               <button
                 onClick={(e) => {
@@ -424,13 +429,13 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
                   e.stopPropagation();
                   setIsEditModalOpen(true);
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg cursor-pointer"
+                className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg cursor-pointer"
                 title="Edit your resource"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                <span className="text-xs font-medium">Edit</span>
+                <span className="text-xs sm:text-sm font-medium">Edit</span>
               </button>
             )}
             <button
@@ -439,27 +444,27 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
                 e.stopPropagation();
                 setIsCommentModalOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg cursor-pointer"
+              className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg cursor-pointer"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
-              <span className="text-xs font-medium">View Details</span>
+              <span className="text-xs sm:text-sm font-medium">View</span>
             </button>
             <button
               onClick={handleRecommend}
-              className={`flex items-center gap-1 px-2 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all cursor-pointer ${
                 isRecommended
                   ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
               title="Recommend this resource"
             >
-              <svg className="w-3.5 h-3.5" fill={isRecommended ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill={isRecommended ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
               </svg>
-              {recommendCount > 0 && <span className="text-xs font-semibold">{recommendCount}</span>}
+              {recommendCount > 0 && <span className="text-xs sm:text-sm font-semibold">{recommendCount}</span>}
             </button>
             {user && (
               <button
