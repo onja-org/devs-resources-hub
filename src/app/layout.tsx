@@ -127,7 +127,7 @@ export const metadata: Metadata = {
     url: "https://resources.onja.org",
     siteName: "Dev Resources Hub",
     title: "Dev Resources - Best Programming resources like articles, tutorials, courses and more | 265+ Free Developer Courses",
-    description: "Explore curated programming tutorials and web development resources from the internet. Learn JavaScript, React, Python, Node.js with the best coding tutorials, courses, and guides. Gamified learning platform built by developers in Madagascar for developers worldwide.",
+    description: "Explore curated programming tutorials and web development resources from the internet. Learn JavaScript, React, Python, Node.js with the best coding tutorials, courses, and guides.",
     images: [
       {
         url: "/og-image.png",
