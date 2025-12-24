@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { signIn, signUp, signOut } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
+import { useToast } from '@/contexts/ToastContext';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface AuthModalProps {
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const { user } = useAuth();
   const router = useRouter();
+  const toast = useToast();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -55,8 +57,10 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     try {
       if (mode === 'signin') {
         await signIn(email, password);
+        toast.success('Welcome back! 👋');
       } else {
         await signUp(email, password, name);
+        toast.success('Account created successfully! 🎉 Welcome to Dev Resources Hub!');
       }
       onClose();
       setName('');

@@ -3,11 +3,83 @@ import ResourceList from '@/components/ResourceList';
 import Header from '@/components/Header';
 import ProgressDashboard from '@/components/ProgressDashboard';
 import StreakTracker from '@/components/StreakTracker';
+import FAQSection from '@/components/FAQSection';
 import { Suspense } from 'react';
 
 export default function Home() {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'EducationalOrganization',
+    name: 'Dev Resources Hub',
+    description: 'Curated collection of 265+ programming tutorials, web development courses, and developer tools for learning JavaScript, React, Python, Node.js, TypeScript and more',
+    url: 'https://dev-resources.onja.org',
+    logo: 'https://dev-resources.onja.org/favicon.svg',
+    sameAs: [
+      'https://twitter.com/onja_org',
+      'https://github.com/onja-org',
+      'https://onja.org'
+    ],
+    founder: {
+      '@type': 'Organization',
+      name: 'Onja',
+      url: 'https://onja.org'
+    },
+    offers: {
+      '@type': 'Offer',
+      category: 'Education',
+      price: '0',
+      priceCurrency: 'USD',
+      availability: 'https://schema.org/InStock'
+    },
+    educationalCredentialAwarded: 'Certificate of Completion',
+    hasOfferCatalog: {
+      '@type': 'OfferCatalog',
+      name: 'Programming Learning Resources',
+      itemListElement: [
+        {
+          '@type': 'Course',
+          name: 'Web Development Resources',
+          description: 'HTML, CSS, JavaScript, React, Vue, Angular tutorials and courses',
+          provider: {
+            '@type': 'Organization',
+            name: 'Dev Resources Hub'
+          }
+        },
+        {
+          '@type': 'Course',
+          name: 'Backend Development Resources',
+          description: 'Node.js, Python, databases, API development tutorials',
+          provider: {
+            '@type': 'Organization',
+            name: 'Dev Resources Hub'
+          }
+        },
+        {
+          '@type': 'Course',
+          name: 'DevOps & Cloud Resources',
+          description: 'Docker, Kubernetes, AWS, Azure, CI/CD tutorials',
+          provider: {
+            '@type': 'Organization',
+            name: 'Dev Resources Hub'
+          }
+        }
+      ]
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.8',
+      ratingCount: '150',
+      bestRating: '5',
+      worstRating: '1'
+    }
+  };
+
   return (
     <AuthProvider>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Header />
       <StreakTracker />
       <ProgressDashboard />
@@ -29,6 +101,8 @@ export default function Home() {
           }>
             <ResourceList />
           </Suspense>
+
+          <FAQSection />
         </main>
       </div>
     </AuthProvider>

@@ -8,6 +8,8 @@ import { db } from '@/lib/firebase';
 import { useState, useEffect } from 'react';
 import CommentModal from './CommentModal';
 import RecommendModal from './RecommendModal';
+import { useToast } from '@/contexts/ToastContext';
+import SubmitModal from './SubmitModal';
 
 interface ResourceCardProps {
   resource: Resource;
@@ -16,12 +18,14 @@ interface ResourceCardProps {
 export default function ResourceCard({ resource }: ResourceCardProps) {
   const { user } = useAuth();
   const { trackActivity } = useUserProgress();
+  const toast = useToast();
   const [isFavorited, setIsFavorited] = useState(
     user ? resource.favorites.includes(user.uid) : false
   );
   const [favCount, setFavCount] = useState(resource.favorites.length);
   const [isCommentModalOpen, setIsCommentModalOpen] = useState(false);
   const [isRecommendModalOpen, setIsRecommendModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isRecommended, setIsRecommended] = useState(
     user && resource.recommendations ? resource.recommendations.includes(user.uid) : false
   );
@@ -100,7 +104,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
     e.stopPropagation();
 
     if (!user) {
-      alert('Please sign in to favorite resources');
+      toast.warning('Please sign in to favorite resources');
       return;
     }
 
@@ -113,6 +117,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
         });
         setIsFavorited(false);
         setFavCount(favCount - 1);
+        toast.info('Removed from favorites');
       } else {
         await updateDoc(resourceRef, {
           favorites: arrayUnion(user.uid),
@@ -131,10 +136,11 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
         
         // Track bookmark activity (will check if already tracked)
         await trackActivity('bookmarked', resource.id);
+        toast.success('Added to favorites! ❤️');
       }
     } catch (error) {
       console.error('Error updating favorite:', error);
-      alert('Failed to update favorite');
+      toast.error('Failed to update favorite');
     }
   };
 
@@ -143,7 +149,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
     e.stopPropagation();
 
     if (!user) {
-      alert('Please sign in to mark resources as complete');
+      toast.warning('Please sign in to mark resources as complete');
       return;
     }
 
@@ -168,9 +174,10 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
       });
       
       await trackActivity('completed', resource.id);
+      toast.success('Marked as complete! 🎉');
     } catch (error) {
       console.error('Error marking complete:', error);
-      alert('Failed to mark as complete');
+      toast.error('Failed to mark as complete');
       setIsCompleted(false);
     }
   };
@@ -180,7 +187,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
     e.stopPropagation();
 
     if (!user) {
-      alert('Please sign in to mark resources as helpful');
+      toast.warning('Please sign in to mark resources as helpful');
       return;
     }
 
@@ -216,10 +223,13 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
       // Track activity if marked as helpful
       if (helpful) {
         await trackActivity('helpful', resource.id);
+        toast.success('Thanks for the feedback! 👍');
+      } else {
+        toast.info('Feedback updated');
       }
     } catch (error) {
       console.error('Error updating helpful:', error);
-      alert('Failed to update helpful status');
+      toast.error('Failed to update helpful status');
     }
   };
 
@@ -228,7 +238,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
     e.stopPropagation();
 
     if (!user) {
-      alert('Please sign in to recommend resources');
+      toast.warning('Please sign in to recommend resources');
       return;
     }
 
@@ -241,16 +251,18 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
         });
         setIsRecommended(false);
         setRecommendCount(recommendCount - 1);
+        toast.info('Recommendation removed');
       } else {
         await updateDoc(resourceRef, {
           recommendations: arrayUnion(user.uid),
         });
         setIsRecommended(true);
         setRecommendCount(recommendCount + 1);
+        toast.success('Resource recommended! ⭐');
       }
     } catch (error) {
       console.error('Error updating recommendation:', error);
-      alert('Failed to update recommendation');
+      toast.error('Failed to update recommendation');
     }
   };
 
@@ -405,6 +417,22 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
             )}
           </div>
           <div className="flex items-center gap-3">
+            {user && resource.submittedBy === user.uid && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsEditModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 transition-all shadow-md hover:shadow-lg cursor-pointer"
+                title="Edit your resource"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <span className="text-xs font-medium">Edit</span>
+              </button>
+            )}
             <button
               onClick={(e) => {
                 e.preventDefault();
@@ -440,7 +468,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
                   e.stopPropagation();
                   setIsRecommendModalOpen(true);
                 }}
-                className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+                className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors cursor-pointer"
                 title="Recommend to a friend"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -450,7 +478,7 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
             )}
             <button
               onClick={handleShare}
-              className={`p-1.5 rounded-lg transition-colors ${
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                 copySuccess
                   ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -495,6 +523,15 @@ export default function ResourceCard({ resource }: ResourceCardProps) {
         resourceId={resource.id}
         resourceTitle={resource.title}
       />
+
+      {isEditModalOpen && (
+        <SubmitModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          editMode={true}
+          existingResource={resource}
+        />
+      )}
 
       <button
         onClick={handleFavorite}

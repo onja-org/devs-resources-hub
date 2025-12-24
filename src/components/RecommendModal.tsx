@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { collection, getDocs, addDoc, Timestamp, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
+import { useToast } from '@/contexts/ToastContext';
 
 interface RecommendModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface UserProfile {
 
 export default function RecommendModal({ isOpen, onClose, resourceId, resourceTitle }: RecommendModalProps) {
   const { user } = useAuth();
+  const toast = useToast();
   const [users, setUsers] = useState<Array<{ id: string; name: string; email: string }>>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -65,6 +67,7 @@ export default function RecommendModal({ isOpen, onClose, resourceId, resourceTi
       setUsers(fetchedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
     } finally {
       setIsFetching(false);
     }
@@ -99,13 +102,13 @@ export default function RecommendModal({ isOpen, onClose, resourceId, resourceTi
         createdAt: Timestamp.now(),
       });
 
-      alert('Resource recommended successfully!');
+      toast.success('Resource recommended successfully! 🎉');
       setSelectedUser(null);
       setSearchTerm('');
       onClose();
     } catch (error) {
       console.error('Error recommending resource:', error);
-      alert('Failed to recommend resource');
+      toast.error('Failed to recommend resource');
     } finally {
       setIsLoading(false);
     }

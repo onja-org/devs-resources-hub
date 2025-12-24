@@ -1,0 +1,21 @@
+{
+  "name": "Dev Resources Hub - Programming Learning Platform",
+  "short_name": "Dev Resources",
+  "description": "Curated programming tutorials, web development courses, and developer tools with gamified learning",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity", "developer tools"],
+  "lang": "en",
+  "dir": "ltr"
+}

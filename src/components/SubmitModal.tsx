@@ -4,13 +4,16 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { useUserProgress } from '@/contexts/UserProgressContext';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, Timestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useLockBodyScroll } from '@/hooks/useLockBodyScroll';
+import { Resource } from '@/types/resource';
 
 interface SubmitModalProps {
   isOpen: boolean;
   onClose: () => void;
+  editMode?: boolean;
+  existingResource?: Resource;
 }
 
 const AVAILABLE_SOURCES = [
@@ -89,19 +92,23 @@ const AVAILABLE_TECH = [
   'Other',
 ];
 
-export default function SubmitModal({ isOpen, onClose }: SubmitModalProps) {
+export default function SubmitModal({ isOpen, onClose, editMode = false, existingResource }: SubmitModalProps) {
   const { user } = useAuth();
   const toast = useToast();
   const { trackActivity } = useUserProgress();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    link: '',
-    type: '',
+    title: editMode && existingResource ? existingResource.title : '',
+    description: editMode && existingResource ? existingResource.description : '',
+    link: editMode && existingResource ? existingResource.link : '',
+    type: editMode && existingResource ? existingResource.type : '',
   });
-  const [selectedTechStack, setSelectedTechStack] = useState<string[]>([]);
-  const [selectedSources, setSelectedSources] = useState<string[]>([]);
+  const [selectedTechStack, setSelectedTechStack] = useState<string[]>(
+    editMode && existingResource ? existingResource.techStack : []
+  );
+  const [selectedSources, setSelectedSources] = useState<string[]>(
+    editMode && existingResource ? [existingResource.source] : []
+  );
   const [techSearchTerm, setTechSearchTerm] = useState('');
   const [sourceSearchTerm, setSourceSearchTerm] = useState('');
   const [showTechDropdown, setShowTechDropdown] = useState(false);
@@ -193,47 +200,67 @@ export default function SubmitModal({ isOpen, onClose }: SubmitModalProps) {
     setIsSubmitting(true);
 
     try {
-      const newResource = {
-        title: formData.title,
-        description: formData.description,
-        link: formData.link,
-        type: formData.type,
-        techStack: selectedTechStack,
-        source: selectedSources.join(', '),
-        approved: false,
-        favorites: [],
-        comments: [],
-        recommendations: [],
-        viewCount: 0,
-        helpfulCount: 0,
-        completedCount: 0,
-        createdAt: Timestamp.now(),
-        submittedBy: user.uid,
-      };
+      if (editMode && existingResource) {
+        // Edit mode - update existing resource
+        const resourceRef = doc(db, 'resources', existingResource.id);
+        await updateDoc(resourceRef, {
+          title: formData.title,
+          description: formData.description,
+          link: formData.link,
+          type: formData.type,
+          techStack: selectedTechStack,
+          source: selectedSources.join(', '),
+          // Note: approved status remains unchanged - edits don't require re-approval
+        });
 
-      const docRef = await addDoc(collection(db, 'resources'), newResource);
+        toast.success('Resource updated successfully! ✏️');
+        onClose();
+        // Refresh the page to show updated content
+        window.location.reload();
+      } else {
+        // Submit mode - create new resource
+        const newResource = {
+          title: formData.title,
+          description: formData.description,
+          link: formData.link,
+          type: formData.type,
+          techStack: selectedTechStack,
+          source: selectedSources.join(', '),
+          approved: false,
+          favorites: [],
+          comments: [],
+          recommendations: [],
+          viewCount: 0,
+          helpfulCount: 0,
+          completedCount: 0,
+          createdAt: Timestamp.now(),
+          submittedBy: user.uid,
+        };
 
-      // Track submission activity for XP
-      await trackActivity('submitted', docRef.id);
+        const docRef = await addDoc(collection(db, 'resources'), newResource);
 
-      toast.success('Resource submitted successfully! +50 XP awarded 🎉');
-      
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        link: '',
-        type: '',
-      });
-      setSelectedTechStack([]);
-      setSelectedSources([]);
-      setTechSearchTerm('');
-      setSourceSearchTerm('');
-      
-      onClose();
+        // Track submission activity for XP
+        await trackActivity('submitted', docRef.id);
+
+        toast.success('Resource submitted successfully! +50 XP awarded 🎉');
+        
+        // Reset form
+        setFormData({
+          title: '',
+          description: '',
+          link: '',
+          type: '',
+        });
+        setSelectedTechStack([]);
+        setSelectedSources([]);
+        setTechSearchTerm('');
+        setSourceSearchTerm('');
+        
+        onClose();
+      }
     } catch (error) {
       console.error('Error submitting resource:', error);
-      toast.error('Failed to submit resource. Please try again.');
+      toast.error(editMode ? 'Failed to update resource. Please try again.' : 'Failed to submit resource. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -294,18 +321,22 @@ export default function SubmitModal({ isOpen, onClose }: SubmitModalProps) {
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Submit a Resource
+              {editMode ? 'Edit Resource' : 'Submit a Resource'}
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Share helpful content with the developer community •{' '}
-              <a
-                href="/guidelines"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 dark:text-blue-400 hover:underline font-medium cursor-pointer"
-              >
-                View Guidelines
-              </a>
+              {editMode ? 'Update your resource details' : (
+                <>
+                  Share helpful content with the developer community •{' '}
+                  <a
+                    href="/guidelines"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium cursor-pointer"
+                  >
+                    View Guidelines
+                  </a>
+                </>
+              )}
             </p>
           </div>
           <button
@@ -572,7 +603,7 @@ export default function SubmitModal({ isOpen, onClose }: SubmitModalProps) {
                   disabled={isSubmitting}
                   className="flex-1 px-6 py-2.5 bg-blue-600 text-white font-medium text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit Resource'}
+                  {isSubmitting ? (editMode ? 'Updating...' : 'Submitting...') : (editMode ? 'Update Resource' : 'Submit Resource')}
                 </button>
                 <button
                   type="button"

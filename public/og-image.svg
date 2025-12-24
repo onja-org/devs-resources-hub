@@ -1,0 +1,35 @@
+<!-- OG Image Placeholder -->
+<!-- Create a 1200x630 image with your branding at /public/og-image.png -->
+<!-- Recommended tools: Canva, Figma, or Photoshop -->
+
+<!-- Suggested design elements:
+- Background: Gradient (blue to purple)
+- Title: "Dev Resources Hub"
+- Subtitle: "265+ Free Programming Tutorials & Courses"
+- Icons: Represent different technologies (JS, React, Python, etc.)
+- Onja logo
+- Call to action: "Learn. Grow. Achieve."
+-->
+
+<!-- For now, you can use a simple SVG as a temporary placeholder -->
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grad)"/>
+  <text x="600" y="250" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">
+    Dev Resources Hub
+  </text>
+  <text x="600" y="330" font-family="Arial, sans-serif" font-size="36" fill="white" text-anchor="middle" opacity="0.9">
+    265+ Free Programming Tutorials &amp; Courses
+  </text>
+  <text x="600" y="420" font-family="Arial, sans-serif" font-size="28" fill="white" text-anchor="middle" opacity="0.8">
+    JavaScript • React • Python • Node.js • TypeScript • More
+  </text>
+  <text x="600" y="500" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="white" text-anchor="middle">
+    Learn. Grow. Achieve.
+  </text>
+</svg>

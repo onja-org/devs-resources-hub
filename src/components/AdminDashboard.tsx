@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/contexts/ToastContext';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, Timestamp, getDoc } from 'firebase/firestore';
@@ -44,27 +44,7 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminCheckLoading, setAdminCheckLoading] = useState(true);
 
-  useEffect(() => {
-    // Wait for auth to load
-    if (authLoading) return;
-    
-    // Check admin status
-    checkAdminStatus();
-  }, [user, authLoading]);
-
-  useEffect(() => {
-    // Only fetch data if user is admin
-    if (adminCheckLoading) return;
-    
-    if (user && isAdmin) {
-      fetchResources();
-      fetchUsers();
-    } else {
-      setLoading(false);
-    }
-  }, [user, isAdmin, adminCheckLoading]);
-
-  async function checkAdminStatus() {
+  const checkAdminStatus = useCallback(async () => {
     if (!user) {
       setIsAdmin(false);
       setAdminCheckLoading(false);
@@ -95,9 +75,9 @@ export default function AdminDashboard() {
     } finally {
       setAdminCheckLoading(false);
     }
-  }
+  }, [user]);
 
-  async function fetchResources() {
+  const fetchResources = useCallback(async () => {
     try {
       const resourcesRef = collection(db, 'resources');
       const querySnapshot = await getDocs(resourcesRef);
@@ -113,9 +93,9 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  async function fetchUsers() {
+  const fetchUsers = useCallback(async () => {
     try {
       const usersRef = collection(db, 'users');
       const querySnapshot = await getDocs(usersRef);
@@ -132,7 +112,27 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error fetching users:', error);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    // Wait for auth to load
+    if (authLoading) return;
+    
+    // Check admin status
+    checkAdminStatus();
+  }, [authLoading, checkAdminStatus]);
+
+  useEffect(() => {
+    // Only fetch data if user is admin
+    if (adminCheckLoading) return;
+    
+    if (user && isAdmin) {
+      fetchResources();
+      fetchUsers();
+    } else {
+      setLoading(false);
+    }
+  }, [user, isAdmin, adminCheckLoading, fetchResources, fetchUsers]);
 
   async function toggleAdminStatus(userId: string, currentStatus: boolean) {
     try {
