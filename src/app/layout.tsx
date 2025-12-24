@@ -16,76 +16,99 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Dev Resources Hub - Free Programming Learning Platform | Tutorials, Courses & Tools",
+    default: "Developer Resources - Free Programming Tutorials & Courses from Madagascar | Learn Web Development",
     template: "%s | Dev Resources Hub"
   },
-  description: "Discover 265+ curated developer resources: programming tutorials, web development courses, coding bootcamps, JavaScript frameworks, React guides, Python learning, Node.js documentation, TypeScript examples, Git tutorials, API references, design patterns, algorithms, data structures, DevOps tools, cloud computing, database management, mobile development, frontend frameworks, backend technologies, software engineering best practices, coding challenges, interview preparation, tech blogs, developer communities, open source projects, and career resources. Free learning platform with gamification, progress tracking, XP points, achievements, and personalized recommendations for developers of all skill levels.",
+  description: "Discover 265+ expertly curated programming resources from Onja Madagascar: best coding tutorials, web development courses, JavaScript frameworks, React guides, Python learning paths, Node.js documentation, TypeScript examples, Git workflows, API references, software design patterns, algorithms, data structures, DevOps guides, cloud computing tutorials, database tutorials, mobile development, frontend frameworks, backend technologies, coding bootcamp resources, developer training, software engineering best practices, coding challenges, technical interview preparation, LeetCode solutions, tech blogs, developer communities, open source contribution guides, career development resources, and freelancing tips. Free learning platform built by Onja developers in Madagascar with gamification, progress tracking, XP points, achievements, skill levels, and AI-powered personalized recommendations for developers worldwide.",
   keywords: [
+    // Onja & Madagascar - Primary focus
+    "Onja", "Onja Madagascar", "Onja developers", "Madagascar tech", "Madagascar developers",
+    "African tech education", "coding bootcamp Madagascar", "developer training Madagascar",
+    "Onja resources", "Onja learning platform", "learn coding Madagascar", "tech talent Africa",
+    "Onja alumni", "Madagascar programmers", "African developers", "coding education Africa",
+    "tech hub Madagascar", "software development Africa", "web developers Madagascar",
+    
+    // Best/Great Resources - Search intent
+    "best programming tutorials", "best coding resources", "great programming courses",
+    "top developer resources", "best web development tutorials", "great coding bootcamps",
+    "best JavaScript tutorials", "top React resources", "best Python courses",
+    "greatest coding tutorials", "excellent programming guides", "top-rated coding resources",
+    "best developer learning platform", "top programming education", "great tech tutorials",
+    
+    // Tutorial-focused
+    "programming tutorials", "coding tutorials", "web development tutorials", 
+    "step-by-step coding guides", "beginner programming tutorials", "advanced coding tutorials",
+    "interactive coding lessons", "video programming tutorials", "free coding courses",
+    "hands-on programming practice", "tutorial collection", "learning resources developers",
+    
+    // Technologies - With tutorial/resource context
+    "JavaScript tutorials", "React tutorial", "Python learning resources", "TypeScript guide",
+    "Node.js tutorials", "Vue.js resources", "Angular tutorials", "Django guide",
+    "Express.js tutorials", "Next.js learning", "Svelte framework tutorial",
+    "Tailwind CSS guide", "Bootstrap tutorials", "MongoDB tutorial", "PostgreSQL guide",
+    
     // General Programming
-    "programming tutorials", "coding resources", "learn to code", "developer learning platform",
-    "software development tutorials", "programming courses", "free coding resources",
+    "learn to code", "software development tutorials", "programming courses",
     "developer education", "tech learning hub", "programming guides",
+    "coding bootcamp resources", "self-taught developer", "learn programming online",
     
     // Languages
-    "JavaScript tutorials", "Python learning", "TypeScript guide", "Java programming",
-    "C++ resources", "Ruby tutorials", "PHP development", "Go programming",
-    "Rust learning", "Kotlin development", "Swift tutorials", "Scala resources",
+    "Java programming", "C++ resources", "Ruby tutorials", "PHP development",
+    "Go programming", "Rust learning", "Kotlin development", "Swift tutorials",
     
-    // Frontend
-    "React tutorials", "Vue.js guide", "Angular learning", "frontend development",
-    "HTML CSS JavaScript", "responsive web design", "UI/UX resources",
-    "Svelte framework", "Next.js tutorials", "web components", "CSS frameworks",
-    "Tailwind CSS", "Bootstrap guide", "frontend frameworks", "modern JavaScript",
+    // Frontend Development
+    "frontend development", "HTML CSS JavaScript", "responsive web design",
+    "UI/UX resources", "web components", "CSS frameworks", "modern JavaScript",
+    "frontend frameworks", "web development guide", "client-side programming",
     
-    // Backend
-    "Node.js tutorials", "Express.js guide", "backend development", "API development",
-    "REST API", "GraphQL tutorials", "microservices", "server-side programming",
-    "Django tutorials", "Flask guide", "Spring Boot", "Laravel PHP",
+    // Backend Development  
+    "backend development", "API development", "REST API tutorials", "GraphQL guide",
+    "microservices", "server-side programming", "Flask tutorials", "Spring Boot",
+    "Laravel PHP", "backend frameworks", "server development",
     
     // Database
-    "SQL tutorials", "PostgreSQL guide", "MongoDB learning", "MySQL resources",
-    "database design", "NoSQL databases", "Redis tutorials", "database management",
-    "ORM tutorials", "Prisma guide", "Sequelize learning",
+    "SQL tutorials", "database design", "NoSQL databases", "Redis guide",
+    "database management", "ORM tutorials", "Prisma guide", "MySQL resources",
     
     // DevOps & Cloud
     "DevOps tutorials", "Docker guide", "Kubernetes learning", "CI/CD pipelines",
     "AWS tutorials", "Azure cloud", "Google Cloud Platform", "cloud computing",
-    "infrastructure as code", "Terraform guide", "Jenkins tutorials",
+    "Terraform guide", "Jenkins tutorials", "containerization", "cloud deployment",
     
-    // Tools & Practices
-    "Git tutorials", "GitHub guide", "version control", "code review",
+    // Tools & Best Practices
+    "Git tutorials", "GitHub guide", "version control", "code review best practices",
     "testing frameworks", "Jest tutorials", "unit testing", "TDD BDD",
-    "debugging techniques", "code quality", "clean code", "design patterns",
-    "agile development", "scrum methodology", "software architecture",
+    "debugging techniques", "clean code", "design patterns", "SOLID principles",
+    "software architecture", "code quality", "best coding practices",
     
     // Mobile & Desktop
     "mobile app development", "React Native tutorials", "Flutter guide",
-    "iOS development", "Android programming", "cross-platform development",
-    "Electron tutorials", "desktop applications",
+    "iOS development", "Android programming", "cross-platform apps",
     
-    // Career & Interview
-    "coding interview prep", "algorithm challenges", "data structures tutorial",
-    "technical interview", "LeetCode solutions", "system design", "career development",
-    "developer portfolio", "resume tips", "job search", "freelancing",
+    // Career & Interview Prep
+    "coding interview prep", "algorithm tutorials", "data structures tutorial",
+    "technical interview questions", "LeetCode solutions", "system design interview",
+    "developer career", "portfolio tips", "resume for developers", "job search tech",
+    "freelance developer", "remote developer jobs", "tech career Madagascar",
     
-    // Community & Tools
-    "developer community", "tech blogs", "programming podcasts", "code snippets",
-    "developer tools", "IDE tutorials", "VS Code extensions", "productivity tools",
-    "open source projects", "contribute to open source", "developer resources",
+    // Community & Learning
+    "developer community", "tech blogs", "programming resources", "code examples",
+    "developer tools", "VS Code tutorials", "productivity for developers",
+    "open source projects", "contribute to open source", "coding mentorship",
     
-    // Concepts
+    // Concepts & Skills
     "object-oriented programming", "functional programming", "async programming",
-    "web security", "authentication", "authorization", "encryption",
-    "performance optimization", "accessibility", "SEO optimization",
-    "progressive web apps", "single page applications", "state management",
+    "web security tutorials", "authentication guide", "performance optimization",
+    "accessibility web development", "SEO for developers", "progressive web apps",
+    "state management", "API design", "software testing",
     
-    // Onja & Context
-    "Onja coding bootcamp", "Madagascar developers", "coding education Africa",
-    "developer training program", "tech education Madagascar", "learn programming free",
-    "gamified learning", "progress tracking", "XP achievements", "developer leveling system"
+    // Gamification & Learning Features
+    "gamified learning", "progress tracking", "XP achievements", "coding challenges",
+    "developer leveling system", "learn by doing", "interactive coding",
+    "personalized learning path", "skill-based learning", "achievement system"
   ],
   authors: [{ name: "Onja", url: "https://onja.org" }],
-  creator: "Onja",
+  creator: "Onja Madagascar",
   publisher: "Onja",
   robots: {
     index: true,
@@ -101,10 +124,10 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://dev-resources.onja.org",
+    url: "https://resources.onja.org",
     siteName: "Dev Resources Hub",
-    title: "Dev Resources Hub - 265+ Free Programming Tutorials & Learning Resources",
-    description: "Curated collection of programming tutorials, web development courses, coding guides, and developer tools. Learn JavaScript, React, Python, Node.js, TypeScript, and more with gamified progress tracking.",
+    title: "Dev Resources - Best Programming Tutorials from Madagascar | 265+ Free Developer Courses",
+    description: "Explore curated programming tutorials and web development resources from Onja Madagascar. Learn JavaScript, React, Python, Node.js with the best coding tutorials, courses, and guides. Gamified learning platform built by developers in Madagascar for developers worldwide.",
     images: [
       {
         url: "/og-image.png",
@@ -122,7 +145,7 @@ export const metadata: Metadata = {
     creator: "@onja_org",
   },
   alternates: {
-    canonical: "https://dev-resources.onja.org",
+    canonical: "https://resources.onja.dev",
   },
   category: "technology",
   classification: "Education",
@@ -153,8 +176,114 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "EducationalOrganization",
+        "@id": "https://resources.onja.dev/#organization",
+        "name": "Onja",
+        "url": "https://onja.org",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://resources.onja.dev/logo.png"
+        },
+        "address": {
+          "@type": "PostalAddress",
+          "addressCountry": "Madagascar",
+          "addressLocality": "Toamasina"
+        },
+        "description": "Onja is a social enterprise training underprivileged youth into world-class software developers.",
+        "sameAs": [
+          "https://github.com/onja-org",
+          "https://twitter.com/onja_org",
+          "https://www.linkedin.com/company/onja-madagascar"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://resources.onja.dev/#website",
+        "url": "https://resources.onja.dev",
+        "name": "Onja Developer Resources",
+        "description": "Curated programming tutorials and web development resources from Madagascar",
+        "publisher": {
+          "@id": "https://resources.onja.dev/#organization"
+        },
+        "inLanguage": "en-US"
+      },
+      {
+        "@type": "Course",
+        "name": "Free Programming & Web Development Resources",
+        "description": "Comprehensive collection of 265+ curated programming tutorials, web development courses, and coding resources covering JavaScript, React, Python, Node.js, TypeScript, and more.",
+        "provider": {
+          "@id": "https://resources.onja.dev/#organization"
+        },
+        "educationalLevel": "All Levels",
+        "inLanguage": "en-US",
+        "availableLanguage": "en",
+        "hasCourseInstance": {
+          "@type": "CourseInstance",
+          "courseMode": "online",
+          "courseWorkload": "PT1H"
+        },
+        "audience": {
+          "@type": "EducationalAudience",
+          "educationalRole": "student"
+        }
+      },
+      {
+        "@type": "ItemList",
+        "name": "Programming Tutorial Categories",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "JavaScript Tutorials"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "React Resources"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Python Learning"
+          },
+          {
+            "@type": "ListItem",
+            "position": 4,
+            "name": "Node.js Tutorials"
+          },
+          {
+            "@type": "ListItem",
+            "position": 5,
+            "name": "TypeScript Guides"
+          }
+        ]
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://resources.onja.dev"
+          }
+        ]
+      }
+    ]
+  };
+
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

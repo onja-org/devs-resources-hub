@@ -1,4 +1,4 @@
-# Dev Resources Hub - Free Programming Learning Platform
+# Onja Resources - Free Programming Tutorials from Madagascar
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-blue)](https://reactjs.org/)
@@ -6,13 +6,13 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8)](https://tailwindcss.com/)
 [![Firebase](https://img.shields.io/badge/Firebase-Latest-orange)](https://firebase.google.com/)
 
-A comprehensive web platform for discovering, sharing, and learning from 265+ curated programming tutorials, web development courses, coding guides, and developer tools. Features gamified learning with XP points, achievements, and progress tracking.
+A comprehensive learning platform built by **Onja developers in Madagascar** featuring 265+ expertly curated programming tutorials, web development courses, coding guides, and developer tools. Discover the best coding resources with gamified learning, XP points, achievements, and progress tracking.
 
-**Live Demo:** [https://dev-resources.onja.org](https://dev-resources.onja.org)
+**Live Demo:** [https://resources.onja.dev](https://resources.onja.dev)
 
 ## 🚀 Key Features
 
-- 📚 **265+ Curated Resources** - Programming tutorials, web development courses, coding bootcamps, documentation, tools, and videos
+- 📚 **265+ Best Resources** - Curated programming tutorials, web development courses, great coding bootcamps, documentation, tools, and videos
 - 🎮 **Gamification System** - Earn XP points, unlock 17 unique achievements, maintain learning streaks, and level up
 - 📊 **Progress Tracking** - Track completed resources, XP across categories, and personal growth metrics
 - 🔍 **Advanced Search & Filters** - Search by keywords, filter by category, tech stack, difficulty, type, and source
