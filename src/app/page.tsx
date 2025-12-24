@@ -3,6 +3,7 @@ import ResourceList from '@/components/ResourceList';
 import Header from '@/components/Header';
 import ProgressDashboard from '@/components/ProgressDashboard';
 import StreakTracker from '@/components/StreakTracker';
+import { Suspense } from 'react';
 
 export default function Home() {
   return (
@@ -21,7 +22,13 @@ export default function Home() {
             </p>
           </div>
 
-          <ResourceList />
+          <Suspense fallback={
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          }>
+            <ResourceList />
+          </Suspense>
         </main>
       </div>
     </AuthProvider>

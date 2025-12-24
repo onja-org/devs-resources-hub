@@ -45,20 +45,13 @@ export default function AdminDashboard() {
     // Wait for auth to load
     if (authLoading) return;
     
-    // Redirect if not logged in
-    if (!user) {
-      router.push('/');
-      return;
+    // Only fetch resources if user is admin
+    if (user && isAdmin) {
+      fetchResources();
+    } else {
+      setLoading(false);
     }
-    
-    // Redirect if not admin
-    if (!isAdmin) {
-      return; // Just show access denied message, don't redirect
-    }
-    
-    // Fetch resources if admin
-    fetchResources();
-  }, [user, isAdmin, router, authLoading]);
+  }, [user, isAdmin, authLoading]);
 
   async function fetchResources() {
     try {
@@ -287,10 +280,31 @@ export default function AdminDashboard() {
     setCurrentPage(1);
   };
 
-  if (authLoading || !user) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            Authentication Required
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Please sign in to access the admin dashboard.
+          </p>
+          <button
+            onClick={() => router.push('/')}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Go to Home
+          </button>
+        </div>
       </div>
     );
   }
