@@ -3,6 +3,7 @@ import ResourceList from '@/components/ResourceList';
 import Header from '@/components/Header';
 import ProgressDashboard from '@/components/ProgressDashboard';
 import StreakTracker from '@/components/StreakTracker';
+import { InstallPrompt } from '@/components/InstallPrompt';
 import { Suspense } from 'react';
 
 export default function Home() {
@@ -79,6 +80,7 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <InstallPrompt />
       <Header />
       <StreakTracker />
       <ProgressDashboard />

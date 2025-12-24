@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import AuthModal from './AuthModal';
 import SubmitModal from './SubmitModal';
@@ -11,9 +11,34 @@ export default function Header() {
   const { user, loading } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    // Check if running as installed PWA
+    const checkInstalled = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isIOSPWA = (window.navigator as any).standalone === true;
+      setIsInstalled(isStandalone || isIOSPWA);
+    };
+    
+    checkInstalled();
+  }, []);
 
   return (
     <>
+      {isInstalled && (
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 px-4">
+          <div className="container mx-auto flex items-center justify-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <div className="text-center">
+              <span className="text-sm font-semibold">Onja Resources App</span>
+              <span className="text-xs text-blue-100 ml-2">• Offline mode enabled</span>
+            </div>
+          </div>
+        </div>
+      )}
       <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">

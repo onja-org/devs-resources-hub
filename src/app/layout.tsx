@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/contexts/ToastContext";
 import { UserProgressProvider } from "@/contexts/UserProgressContext";
+import { PWAInstaller } from "@/components/PWAInstaller";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,10 +17,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Developer Resources - Free Programming Tutorials & Courses from Madagascar | Learn Web Development",
+    default: "Developer Resources - Free Programming Tutorials & Courses from the internet | Learn Web Development",
     template: "%s | Dev Resources Hub"
   },
-  description: "Discover 265+ expertly curated programming resources from Onja Madagascar: best coding tutorials, web development courses, JavaScript frameworks, React guides, Python learning paths, Node.js documentation, TypeScript examples, Git workflows, API references, software design patterns, algorithms, data structures, DevOps guides, cloud computing tutorials, database tutorials, mobile development, frontend frameworks, backend technologies, coding bootcamp resources, developer training, software engineering best practices, coding challenges, technical interview preparation, LeetCode solutions, tech blogs, developer communities, open source contribution guides, career development resources, and freelancing tips. Free learning platform built by Onja developers in Madagascar with gamification, progress tracking, XP points, achievements, skill levels, and AI-powered personalized recommendations for developers worldwide.",
+  description: "Discover many curated programming resources: best coding tutorials, web development courses, JavaScript frameworks, React guides, Python learning paths, Node.js documentation, TypeScript examples, Git workflows, API references, software design patterns, algorithms, data structures, DevOps guides, cloud computing tutorials, database tutorials, mobile development, frontend frameworks, backend technologies, coding bootcamp resources, developer training, software engineering best practices, coding challenges, technical interview preparation, LeetCode solutions, tech blogs, developer communities, open source contribution guides, career development resources, and freelancing tips. Free learning platform, progress tracking, achievements, skill levels, and recommendations for developers worldwide.",
   keywords: [
     // Onja & Madagascar - Primary focus
     "Onja", "Onja Madagascar", "Onja developers", "Madagascar tech", "Madagascar developers",
@@ -152,22 +153,28 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.svg', sizes: 'any' }
+      { url: '/icon-192.svg', sizes: '192x192', type: 'image/svg+xml' },
+      { url: '/icon-512.svg', sizes: '512x512', type: 'image/svg+xml' }
     ],
-    apple: '/apple-touch-icon.svg',
+    apple: [
+      { url: '/apple-touch-icon.svg', sizes: '180x180', type: 'image/svg+xml' }
+    ],
   },
   manifest: "/manifest.json",
-  applicationName: "Dev Resources Hub",
+  applicationName: "Onja Developer Resources",
   appleWebApp: {
     capable: true,
-    title: "Dev Resources Hub",
-    statusBarStyle: "default",
+    title: "Onja Resources",
+    statusBarStyle: "black-translucent",
   },
   formatDetection: {
     telephone: false,
   },
   verification: {
     google: "google-site-verification-code", // Replace with actual code
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
   },
 };
 
@@ -287,6 +294,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <PWAInstaller />
         <ToastProvider>
           <UserProgressProvider>
             {children}

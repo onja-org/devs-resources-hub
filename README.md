@@ -13,6 +13,7 @@ A comprehensive learning platform built by **Onja developers in Madagascar** fea
 ## 🚀 Key Features
 
 - 📚 **265+ Best Resources** - Curated programming tutorials, web development courses, great coding bootcamps, documentation, tools, and videos
+- 📱 **Progressive Web App (PWA)** - Install on mobile or desktop for offline access and app-like experience
 - 🎮 **Gamification System** - Earn XP points, unlock 17 unique achievements, maintain learning streaks, and level up
 - 📊 **Progress Tracking** - Track completed resources, XP across categories, and personal growth metrics
 - 🔍 **Advanced Search & Filters** - Search by keywords, filter by category, tech stack, difficulty, type, and source
@@ -29,10 +30,27 @@ A comprehensive learning platform built by **Onja developers in Madagascar** fea
 - 📱 **Mobile Responsive** - Works seamlessly on desktop, tablet, and mobile devices
 - ⚡ **Performance Optimized** - Fast loading, efficient database queries, and optimized rendering
 - 🔎 **SEO Optimized** - Comprehensive metadata, structured data, sitemap, and robots.txt
+- 🔌 **Installable** - Works as a Progressive Web App (PWA) on any device
+
+## 📱 PWA Installation
+
+Onja Resources can be installed on your device for a native app-like experience!
+
+**Benefits:**
+- 📴 Offline access to resources
+- 🚀 Faster loading with caching
+- 📲 Home screen icon
+- 🖥️ Full-screen app mode
+- 🔔 Push notifications (coming soon)
+
+**How to Install:**
+- **Mobile**: Tap "Add to Home Screen" from browser menu
+- **Desktop**: Click the install icon (⊕) in the address bar
+- **iOS**: Share button → "Add to Home Screen"
+
+[📖 View detailed installation guide](docs/PWA_GUIDE.md)
 
 ## 🛠️ Tech Stack
-
-- **Next.js 16** - React framework with App Router
 - **React 19** - Latest React features
 - **TypeScript 5** - Type-safe development
 - **Tailwind CSS v4** - Utility-first CSS framework
